@@ -1,0 +1,1179 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>NEBULOSO | Xbox Cyber Arcade & Dev Mode Store</title>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;800;900&family=Press+Start+2P&family=Rajdhani:wght@500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        xbox: {
+                            DEFAULT: '#00FC60',
+                            glow: '#00FF66',
+                            dark: '#107C41',
+                            deep: '#054B26'
+                        },
+                        cyber: {
+                            black: '#07070c',
+                            card: 'rgba(10, 14, 23, 0.85)',
+                            border: '#1f293d',
+                            cyan: '#00F0FF',
+                            purple: '#8A2BE2',
+                            pink: '#FF007F'
+                        }
+                    },
+                    fontFamily: {
+                        orbitron: ['Orbitron', 'sans-serif'],
+                        pixel: ['"Press Start 2P"', 'monospace'],
+                        rajdhani: ['Rajdhani', 'sans-serif'],
+                        sans: ['Inter', 'sans-serif']
+                    },
+                    boxShadow: {
+                        'neon-xbox': '0 0 18px rgba(0, 252, 96, 0.5), 0 0 35px rgba(0, 252, 96, 0.25)',
+                        'neon-cyan': '0 0 18px rgba(0, 240, 255, 0.5), 0 0 35px rgba(0, 240, 255, 0.25)',
+                        'neon-purple': '0 0 18px rgba(138, 43, 226, 0.5)'
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #07070c;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #107C41;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #00FC60;
+        }
+
+        /* Neon Flicker Effect */
+        @keyframes neon-flicker {
+            0%, 19%, 21%, 23%, 25%, 54%, 56%, 100% {
+                text-shadow: 0 0 5px #00FC60, 0 0 12px #00FC60, 0 0 25px #00FC60, 0 0 45px #107C41;
+            }
+            20%, 24%, 55% {
+                text-shadow: none;
+            }
+        }
+
+        .neon-text-xbox {
+            color: #00FC60;
+            animation: neon-flicker 4s infinite alternate;
+        }
+
+        /* Background Overlay */
+        .site-bg-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 0;
+            background-image: url('https://i.postimg.cc/h47j60wZ/NEBULOSO.png');
+            background-repeat: no-repeat;
+            background-position: center top;
+            background-size: cover;
+            background-attachment: fixed;
+            filter: brightness(0.85) contrast(1.15) opacity(0.95);
+            transition: all 0.3s ease-in-out;
+            pointer-events: none !important;
+        }
+
+        @media (max-width: 768px) {
+            .site-bg-overlay {
+                background-position: center top;
+                background-size: cover;
+                background-attachment: scroll;
+                filter: brightness(0.80) contrast(1.15) opacity(0.92);
+            }
+        }
+
+        /* Particle Canvas */
+        #snow-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none !important;
+            z-index: 2;
+        }
+
+        /* Scanline Overlay */
+        .scanline {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(
+                to bottom,
+                rgba(255,255,255,0),
+                rgba(255,255,255,0) 50%,
+                rgba(0, 0, 0, 0.25) 50%,
+                rgba(0, 0, 0, 0.25)
+            );
+            background-size: 100% 4px;
+            pointer-events: none !important;
+            z-index: 3;
+            opacity: 0.25;
+        }
+
+        /* Clip Corner Styles */
+        .clip-corner {
+            clip-path: polygon(0 0, calc(100% - 15px) 0, 100% 15px, 100% 100%, 15px 100%, 0 calc(100% - 15px));
+        }
+
+        .clip-btn {
+            clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);
+        }
+
+        /* Mobile Touch Optimizations */
+        button, a, input {
+            touch-action: manipulation;
+            -webkit-tap-highlight-color: transparent;
+        }
+    </style>
+</head>
+<body class="bg-cyber-black text-gray-200 font-sans antialiased min-h-screen relative overflow-x-hidden selection:bg-xbox selection:text-black">
+
+    <!-- Background Effects -->
+    <div class="site-bg-overlay"></div>
+    <div class="fixed inset-0 bg-gradient-to-b from-cyber-black/60 via-cyber-black/45 to-cyber-black/70 z-[1] pointer-events-none"></div>
+    <canvas id="snow-canvas"></canvas>
+    <div class="scanline"></div>
+
+    <div class="relative z-10 flex flex-col min-h-screen">
+
+        <!-- HEADER / NAVIGATION -->
+        <header class="sticky top-0 z-40 bg-cyber-black/85 backdrop-blur-md border-b border-cyber-border/80 shadow-xl">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
+                
+                <a href="#" class="flex items-center space-x-3 group">
+                    <div class="w-11 h-11 rounded-full bg-black border-2 border-xbox flex items-center justify-center shadow-neon-xbox group-hover:scale-105 transition-transform">
+                        <i class="fa-brands fa-xbox text-xbox text-2xl group-hover:rotate-12 transition-transform"></i>
+                    </div>
+                    <div class="flex flex-col">
+                        <span class="font-orbitron text-2xl font-black tracking-widest neon-text-xbox uppercase">
+                            NEBULOSO
+                        </span>
+                        <span class="font-pixel text-[8px] text-cyber-cyan tracking-tighter">XBOX DEV ARCADE</span>
+                    </div>
+                </a>
+
+                <nav class="hidden lg:flex items-center space-x-8 font-rajdhani text-lg font-semibold tracking-wide">
+                    <a href="#hero" class="hover:text-xbox transition-colors py-1 border-b-2 border-transparent hover:border-xbox">Início</a>
+                    <a href="#packages" class="hover:text-xbox transition-colors py-1 border-b-2 border-transparent hover:border-xbox">Pacotes Dev Mode</a>
+                    <a href="#emulators" class="hover:text-xbox transition-colors py-1 border-b-2 border-transparent hover:border-xbox">Emuladores</a>
+                    <a href="#devmode" class="hover:text-xbox transition-colors py-1 border-b-2 border-transparent hover:border-xbox">Como Instalar</a>
+                    <a href="#guides" class="hover:text-xbox transition-colors py-1 border-b-2 border-transparent hover:border-xbox">Suporte FAQ</a>
+                </nav>
+
+                <div class="flex items-center space-x-4">
+                    <div class="relative hidden sm:block w-48 md:w-60">
+                        <input type="text" id="searchInput" placeholder="Buscar no sistema..." 
+                            class="w-full bg-black/70 border border-cyber-border rounded-lg py-2 pl-9 pr-4 text-xs font-rajdhani text-gray-200 placeholder-gray-500 focus:outline-none focus:border-xbox focus:ring-1 focus:ring-xbox transition-all">
+                        <i class="fa-solid fa-magnifying-glass absolute left-3 top-3 text-xs text-gray-400"></i>
+                    </div>
+
+                    <button id="cartBtn" type="button" class="relative p-2.5 bg-black/90 border border-xbox/50 rounded-lg text-xbox hover:bg-xbox hover:text-black hover:shadow-neon-xbox transition-all cursor-pointer">
+                        <i class="fa-solid fa-cart-shopping text-lg pointer-events-none"></i>
+                        <span id="cartCount" class="absolute -top-2 -right-2 bg-cyber-pink text-white font-bold font-orbitron text-[10px] w-5 h-5 rounded-full flex items-center justify-center border border-black shadow-md pointer-events-none">1</span>
+                    </button>
+
+                    <button id="mobileMenuBtn" type="button" class="lg:hidden p-2 text-gray-300 hover:text-xbox focus:outline-none cursor-pointer">
+                        <i class="fa-solid fa-bars text-2xl pointer-events-none"></i>
+                    </button>
+                </div>
+            </div>
+
+            <div id="mobileMenu" class="hidden lg:hidden bg-black/95 border-b border-cyber-border px-4 pt-2 pb-6 space-y-3 font-rajdhani text-lg">
+                <div class="pt-2 pb-3">
+                    <input type="text" id="mobileSearchInput" placeholder="Buscar pacotes..." 
+                        class="w-full bg-cyber-black border border-cyber-border rounded-lg py-2 px-4 text-sm text-gray-200 focus:border-xbox focus:outline-none">
+                </div>
+                <a href="#hero" class="block text-gray-300 hover:text-xbox py-1 border-l-2 border-transparent hover:border-xbox pl-2">Início</a>
+                <a href="#packages" class="block text-gray-300 hover:text-xbox py-1 border-l-2 border-transparent hover:border-xbox pl-2">Pacotes Dev Mode</a>
+                <a href="#emulators" class="block text-gray-300 hover:text-xbox py-1 border-l-2 border-transparent hover:border-xbox pl-2">Emuladores Suportados</a>
+                <a href="#devmode" class="block text-gray-300 hover:text-xbox py-1 border-l-2 border-transparent hover:border-xbox pl-2">Guia de Instalação</a>
+            </div>
+        </header>
+
+        <!-- HERO BANNER SECTION -->
+        <section id="hero" class="relative py-16 lg:py-24 overflow-hidden border-b border-cyber-border/70">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+                    
+                    <div class="lg:col-span-7 space-y-6 text-center lg:text-left">
+                        <div class="inline-flex items-center space-x-2 bg-black/80 border border-xbox/60 rounded-full px-4 py-1.5 shadow-neon-xbox">
+                            <span class="w-2.5 h-2.5 rounded-full bg-xbox animate-pulse"></span>
+                            <span class="font-rajdhani font-bold text-xs sm:text-sm text-xbox tracking-wider uppercase">SUPORTE TOTAL XBOX SERIES X|S & ONE</span>
+                        </div>
+
+                        <h1 class="font-orbitron font-black text-3xl sm:text-5xl lg:text-6xl text-white tracking-tight leading-none uppercase drop-shadow-lg">
+                            SISTEMA COMPLETO <br>
+                            <span class="text-transparent bg-clip-text bg-gradient-to-r from-xbox via-cyber-cyan to-cyber-purple">
+                                DEV MODE XBOX & ARCADE
+                            </span>
+                        </h1>
+
+                        <p class="font-sans text-gray-200 text-base sm:text-lg max-w-2xl mx-auto lg:mx-0 font-normal leading-relaxed drop-shadow-md">
+                            Transforme seu Xbox em uma máquina retro definitiva! Escolha entre o pacote <strong>BÁSICO (R$ 30,00)</strong> para emulação essencial ou o <strong>CRISTALINO (R$ 49,90)</strong> para alta performance em 4K.
+                        </p>
+
+                        <div class="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4 pt-4">
+                            <a href="#packages" class="w-full sm:w-auto px-8 py-4 bg-xbox text-black font-orbitron font-bold text-sm tracking-wider uppercase rounded hover:bg-xbox-glow hover:shadow-neon-xbox transition-all text-center clip-btn cursor-pointer">
+                                <i class="fa-solid fa-gamepad mr-2"></i> Ver Todos os Pacotes
+                            </a>
+                            <a href="#devmode" class="w-full sm:w-auto px-8 py-4 bg-black/90 border border-cyber-cyan text-cyber-cyan hover:text-black font-orbitron font-bold text-sm tracking-wider uppercase rounded hover:bg-cyber-cyan hover:shadow-neon-cyan transition-all text-center clip-btn cursor-pointer">
+                                <i class="fa-solid fa-code mr-2"></i> Tutorial Dev Mode
+                            </a>
+                        </div>
+
+                        <div class="grid grid-cols-3 gap-4 pt-8 border-t border-gray-800/80 max-w-lg mx-auto lg:mx-0">
+                            <div>
+                                <span class="font-orbitron text-2xl font-bold text-xbox block">100%</span>
+                                <span class="font-rajdhani text-xs text-gray-300">Seguro & Oficial</span>
+                            </div>
+                            <div>
+                                <span class="font-orbitron text-2xl font-bold text-cyber-cyan block">+50.000</span>
+                                <span class="font-rajdhani text-xs text-gray-300">Jogos Suportados</span>
+                            </div>
+                            <div>
+                                <span class="font-orbitron text-2xl font-bold text-cyber-purple block">4K 60FPS</span>
+                                <span class="font-rajdhani text-xs text-gray-300">Ultra Desempenho</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="lg:col-span-5 flex justify-center">
+                        <div class="relative w-full max-w-md bg-cyber-card border-2 border-xbox rounded-xl p-6 shadow-neon-xbox backdrop-blur-md clip-corner">
+                            <div class="absolute -top-3 right-6 bg-cyber-pink text-white font-orbitron text-[10px] font-bold px-3 py-1 rounded shadow-lg uppercase tracking-wider">
+                                ⚡ O MAIS VENDIDO
+                            </div>
+
+                            <div class="relative h-56 rounded-lg overflow-hidden mb-5 border border-cyber-border">
+                                <img src="https://i.postimg.cc/h47j60wZ/NEBULOSO.png" 
+                                     alt="DEV MODE CRISTALINO NEBULOSO" class="w-full h-full object-cover transform hover:scale-110 transition-transform duration-500">
+                                <div class="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent"></div>
+                                <div class="absolute bottom-3 left-3 bg-black/90 px-3 py-1 rounded border border-xbox text-xbox font-orbitron text-xs font-bold">
+                                    <i class="fa-solid fa-gem mr-1"></i> DEV MODE CRISTALINO
+                                </div>
+                            </div>
+
+                            <h3 class="font-orbitron text-2xl font-black text-white mb-1">
+                                DEV MODE CRISTALINO
+                            </h3>
+                            <p class="font-sans text-xs text-gray-300 mb-4 leading-relaxed">
+                                Pacote supremo otimizado. Inclui BIOS universais, Shaders CRT 4K, PCSX2 PS2 Pro, Dolphin GameCube/Wii e RetroArch completo.
+                            </p>
+
+                            <div class="flex items-center justify-between pt-4 border-t border-cyber-border">
+                                <div>
+                                    <span class="text-gray-400 text-xs line-through block font-orbitron">R$ 199,90</span>
+                                    <span class="font-orbitron text-3xl font-black text-xbox">R$ 49,90</span>
+                                </div>
+                                <button type="button" onclick="addToCart(1)" class="px-6 py-3 bg-xbox text-black hover:bg-xbox-glow font-orbitron font-bold text-xs uppercase rounded transition-all shadow-neon-xbox clip-btn cursor-pointer">
+                                    <i class="fa-solid fa-cart-plus mr-1"></i> Comprar
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </section>
+
+        <!-- PACKAGES / PRODUCTS CATALOG SECTION -->
+        <section id="packages" class="py-16 relative bg-black/60 border-b border-cyber-border">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                
+                <div class="text-center max-w-3xl mx-auto mb-12">
+                    <span class="bg-xbox/20 text-xbox border border-xbox/50 font-orbitron text-xs px-3 py-1 rounded uppercase tracking-widest font-bold">
+                        CATÁLOGO DE PACOTES NEBULOSO
+                    </span>
+                    <h2 class="font-orbitron text-3xl sm:text-4xl font-black text-white uppercase tracking-wider mt-3 mb-2">
+                        ESCOLHA O SEU <span class="text-xbox">PACOTE DEV MODE</span>
+                    </h2>
+                    <div class="w-28 h-1 bg-xbox mx-auto mb-4 shadow-neon-xbox"></div>
+                    <p class="font-rajdhani text-gray-300 text-lg">
+                        Selecione a opção perfeita para a sua necessidade de emulação no Xbox.
+                    </p>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    
+                    <!-- DEV MODE BÁSICO CARD -->
+                    <div class="bg-cyber-card border-2 border-cyber-cyan/70 hover:border-cyber-cyan rounded-2xl p-6 sm:p-8 shadow-xl backdrop-blur-lg clip-corner flex flex-col justify-between transition-all hover:shadow-neon-cyan">
+                        <div>
+                            <div class="flex items-center justify-between mb-4">
+                                <span class="bg-cyber-cyan/20 text-cyber-cyan border border-cyber-cyan/50 font-orbitron text-xs font-bold px-3 py-1 rounded uppercase">
+                                    INICIAL / ESSENCIAL
+                                </span>
+                                <span class="font-orbitron text-xs text-gray-400">R$ 99,90</span>
+                            </div>
+
+                            <div class="relative h-48 rounded-xl overflow-hidden mb-5 border border-cyber-border">
+                                <img src="https://i.postimg.cc/h47j60wZ/NEBULOSO.png" alt="Dev Mode Básico" class="w-full h-full object-cover">
+                                <div class="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent"></div>
+                                <div class="absolute bottom-3 left-3 bg-black/90 px-3 py-1 rounded border border-cyber-cyan text-cyber-cyan font-orbitron text-xs font-bold">
+                                    <i class="fa-solid fa-cube mr-1"></i> DEV MODE BÁSICO
+                                </div>
+                            </div>
+
+                            <div class="flex items-baseline justify-between mb-4">
+                                <h3 class="font-orbitron text-2xl font-black text-white">DEV MODE BÁSICO</h3>
+                                <div class="text-right">
+                                    <span class="font-orbitron text-3xl font-black text-cyber-cyan">R$ 30,00</span>
+                                </div>
+                            </div>
+
+                            <p class="font-sans text-xs text-gray-300 mb-6 leading-relaxed">
+                                Pacote essencial para quem busca atração e configuração rápida no seu console Xbox.
+                            </p>
+
+                            <ul class="space-y-2.5 font-rajdhani text-sm text-gray-200 mb-8">
+                                <li class="flex items-center">
+                                    <i class="fa-solid fa-check text-cyber-cyan mr-3"></i>
+                                    <span><strong>Ativação Dev Mode:</strong> Auxílio para ativação e pareamento da licença.</span>
+                                </li>
+                                <li class="flex items-center">
+                                    <i class="fa-solid fa-check text-cyber-cyan mr-3"></i>
+                                    <span><strong>Sumário da Comunidade:</strong> Acesso às compilações e links da comunidade.</span>
+                                </li>
+                                <li class="flex items-center">
+                                    <i class="fa-solid fa-check text-cyber-cyan mr-3"></i>
+                                    <span><strong>Arquivos BIOS:</strong> Pacote base de BIOS essenciais do sistema.</span>
+                                </li>
+                                <li class="flex items-center">
+                                    <i class="fa-solid fa-check text-cyber-cyan mr-3"></i>
+                                    <span><strong>Guia de Instalação:</strong> Tutorial simplificado passo a passo incluso.</span>
+                                </li>
+                            </ul>
+                        </div>
+
+                        <div class="pt-4 border-t border-cyber-border flex gap-3">
+                            <button type="button" onclick="addToCart(2)" class="flex-1 py-3.5 bg-cyber-cyan text-black hover:bg-white font-orbitron font-bold text-xs uppercase rounded transition-all shadow-neon-cyan clip-btn cursor-pointer">
+                                <i class="fa-solid fa-cart-plus mr-1"></i> Comprar - R$ 30,00
+                            </button>
+                            <button type="button" onclick="openProductModal(2)" class="py-3.5 px-4 bg-black/80 border border-cyber-border text-gray-300 hover:text-white font-orbitron font-bold text-xs uppercase rounded transition-all clip-btn cursor-pointer">
+                                <i class="fa-solid fa-info-circle"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- DEV MODE CRISTALINO CARD -->
+                    <div class="bg-cyber-card border-2 border-xbox hover:border-xbox rounded-2xl p-6 sm:p-8 shadow-2xl backdrop-blur-lg clip-corner flex flex-col justify-between transition-all hover:shadow-neon-xbox relative">
+                        <div class="absolute -top-3.5 right-6 bg-cyber-pink text-white font-orbitron text-[10px] font-bold px-3 py-1 rounded shadow-lg uppercase tracking-wider">
+                            🔥 MÁXIMA RECOMENDAÇÃO
+                        </div>
+
+                        <div>
+                            <div class="flex items-center justify-between mb-4">
+                                <span class="bg-xbox/20 text-xbox border border-xbox/50 font-orbitron text-xs font-bold px-3 py-1 rounded uppercase">
+                                    COMPLETO 4K 60FPS
+                                </span>
+                                <span class="font-orbitron text-xs text-gray-400 line-through">R$ 199,90</span>
+                            </div>
+
+                            <div class="relative h-48 rounded-xl overflow-hidden mb-5 border border-cyber-border">
+                                <img src="https://i.postimg.cc/h47j60wZ/NEBULOSO.png" alt="Dev Mode Cristalino" class="w-full h-full object-cover">
+                                <div class="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent"></div>
+                                <div class="absolute bottom-3 left-3 bg-black/90 px-3 py-1 rounded border border-xbox text-xbox font-orbitron text-xs font-bold">
+                                    <i class="fa-solid fa-gem mr-1"></i> DEV MODE CRISTALINO
+                                </div>
+                            </div>
+
+                            <div class="flex items-baseline justify-between mb-4">
+                                <h3 class="font-orbitron text-2xl font-black text-white">DEV MODE CRISTALINO</h3>
+                                <div class="text-right">
+                                    <span class="font-orbitron text-3xl font-black text-xbox">R$ 49,90</span>
+                                </div>
+                            </div>
+
+                            <p class="font-sans text-xs text-gray-300 mb-6 leading-relaxed">
+                                Pacote supremo definitivo. Suporte total a PS2 em 4K, GameCube/Wii, Shaders CRT Neon, BIOS universais e atendimento de suporte prioritário.
+                            </p>
+
+                            <ul class="space-y-2.5 font-rajdhani text-sm text-gray-200 mb-8">
+                                <li class="flex items-center">
+                                    <i class="fa-solid fa-check text-xbox mr-3"></i>
+                                    <span><strong>PCSX2 PS2 Pro 4K:</strong> Renderização HD Upscaled 60FPS.</span>
+                                </li>
+                                <li class="flex items-center">
+                                    <i class="fa-solid fa-check text-xbox mr-3"></i>
+                                    <span><strong>Dolphin GameCube & Wii:</strong> Mapeamento perfeito de controles Xbox.</span>
+                                </li>
+                                <li class="flex items-center">
+                                    <i class="fa-solid fa-check text-xbox mr-3"></i>
+                                    <span><strong>Shaders & Filtros CRT Neon:</strong> Visual retro cristalino otimizado.</span>
+                                </li>
+                                <li class="flex items-center">
+                                    <i class="fa-solid fa-check text-xbox mr-3"></i>
+                                    <span><strong>Suporte Prioritário VIP:</strong> Atendimento direto via WhatsApp.</span>
+                                </li>
+                            </ul>
+                        </div>
+
+                        <div class="pt-4 border-t border-cyber-border flex gap-3">
+                            <button type="button" onclick="addToCart(1)" class="flex-1 py-3.5 bg-xbox text-black hover:bg-xbox-glow font-orbitron font-bold text-xs uppercase rounded transition-all shadow-neon-xbox clip-btn cursor-pointer">
+                                <i class="fa-solid fa-cart-plus mr-1"></i> Comprar - R$ 49,90
+                            </button>
+                            <button type="button" onclick="openProductModal(1)" class="py-3.5 px-4 bg-black/80 border border-cyber-border text-gray-300 hover:text-white font-orbitron font-bold text-xs uppercase rounded transition-all clip-btn cursor-pointer">
+                                <i class="fa-solid fa-info-circle"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                </div>
+
+            </div>
+        </section>
+
+        <!-- EMULATORS SHOWCASE SECTION -->
+        <section id="emulators" class="py-16 bg-cyber-black relative border-t border-cyber-border/80">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="text-center mb-10">
+                    <h2 class="font-orbitron text-2xl font-extrabold text-white uppercase tracking-wider">
+                        EMULADORES COMPATÍVEIS NOS PACOTES
+                    </h2>
+                    <p class="font-rajdhani text-gray-300">Desempenho máximo com resolução upscaled no seu console Xbox</p>
+                </div>
+
+                <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-4 text-center">
+                    <div class="p-4 bg-cyber-card border border-cyber-border rounded-lg hover:border-xbox transition-all backdrop-blur-md">
+                        <i class="fa-solid fa-gamepad text-3xl text-xbox mb-2"></i>
+                        <h4 class="font-orbitron text-xs font-bold text-white">PCSX2</h4>
+                        <span class="font-rajdhani text-xs text-gray-400">PlayStation 2 4K</span>
+                    </div>
+                    <div class="p-4 bg-cyber-card border border-cyber-border rounded-lg hover:border-cyber-cyan transition-all backdrop-blur-md">
+                        <i class="fa-solid fa-compact-disc text-3xl text-cyber-cyan mb-2"></i>
+                        <h4 class="font-orbitron text-xs font-bold text-white">DOLPHIN</h4>
+                        <span class="font-rajdhani text-xs text-gray-400">GameCube & Wii</span>
+                    </div>
+                    <div class="p-4 bg-cyber-card border border-cyber-border rounded-lg hover:border-cyber-purple transition-all backdrop-blur-md">
+                        <i class="fa-solid fa-floppy-disk text-3xl text-cyber-purple mb-2"></i>
+                        <h4 class="font-orbitron text-xs font-bold text-white">RETROARCH</h4>
+                        <span class="font-rajdhani text-xs text-gray-400">Multi-Sistemas All-In-One</span>
+                    </div>
+                    <div class="p-4 bg-cyber-card border border-cyber-border rounded-lg hover:border-cyber-pink transition-all backdrop-blur-md">
+                        <i class="fa-solid fa-ghost text-3xl text-cyber-pink mb-2"></i>
+                        <h4 class="font-orbitron text-xs font-bold text-white">MAME / CPS3</h4>
+                        <span class="font-rajdhani text-xs text-gray-400">Fliperamas Clássicos</span>
+                    </div>
+                    <div class="p-4 bg-cyber-card border border-cyber-border rounded-lg hover:border-xbox transition-all backdrop-blur-md">
+                        <i class="fa-solid fa-mobile-screen text-3xl text-xbox mb-2"></i>
+                        <h4 class="font-orbitron text-xs font-bold text-white">PPSSPP</h4>
+                        <span class="font-rajdhani text-xs text-gray-400">PSP HD Edition</span>
+                    </div>
+                    <div class="p-4 bg-cyber-card border border-cyber-border rounded-lg hover:border-cyber-cyan transition-all backdrop-blur-md">
+                        <i class="fa-solid fa-tv text-3xl text-cyber-cyan mb-2"></i>
+                        <h4 class="font-orbitron text-xs font-bold text-white">PARALLEL 64</h4>
+                        <span class="font-rajdhani text-xs text-gray-400">Nintendo 64 Ultra</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- DEV MODE INTERACTIVE SETUP GUIDE SECTION -->
+        <section id="devmode" class="py-16 bg-black/80 border-t border-b border-cyber-border relative">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                
+                <div class="text-center max-w-3xl mx-auto mb-12">
+                    <span class="bg-xbox/10 text-xbox border border-xbox/30 font-orbitron text-xs px-3 py-1 rounded uppercase tracking-widest font-bold">
+                        GUIA DE INSTALAÇÃO SIMPLIFICADO
+                    </span>
+                    <h2 class="font-orbitron text-3xl font-black text-white uppercase tracking-wider mt-3 mb-2">
+                        COMO INSTALAR NO <span class="text-cyber-cyan">SEU XBOX</span>
+                    </h2>
+                    <p class="font-rajdhani text-gray-300 text-base">
+                        Siga o passo a passo e configure seu console Xbox sem perda de garantia.
+                    </p>
+                </div>
+
+                <div class="bg-cyber-card border border-cyber-border rounded-2xl p-6 md:p-8 shadow-2xl backdrop-blur-md">
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-2 mb-8 border-b border-cyber-border pb-4" id="tutorialTabs">
+                        <button type="button" onclick="setTutorialStep(1)" id="tab-step-1" class="tut-tab active font-orbitron text-xs md:text-sm font-bold p-3 rounded border border-xbox text-xbox bg-xbox/10 flex items-center justify-center space-x-2 transition-all shadow-neon-xbox cursor-pointer">
+                            <span class="w-6 h-6 rounded-full bg-xbox text-black flex items-center justify-center font-bold text-xs pointer-events-none">1</span>
+                            <span class="pointer-events-none">CONTA DEV</span>
+                        </button>
+                        <button type="button" onclick="setTutorialStep(2)" id="tab-step-2" class="tut-tab font-orbitron text-xs md:text-sm font-bold p-3 rounded border border-cyber-border text-gray-400 hover:text-white flex items-center justify-center space-x-2 transition-all cursor-pointer">
+                            <span class="w-6 h-6 rounded-full bg-gray-800 text-gray-300 flex items-center justify-center font-bold text-xs pointer-events-none">2</span>
+                            <span class="pointer-events-none">ATIVAÇÃO</span>
+                        </button>
+                        <button type="button" onclick="setTutorialStep(3)" id="tab-step-3" class="tut-tab font-orbitron text-xs md:text-sm font-bold p-3 rounded border border-cyber-border text-gray-400 hover:text-white flex items-center justify-center space-x-2 transition-all cursor-pointer">
+                            <span class="w-6 h-6 rounded-full bg-gray-800 text-gray-300 flex items-center justify-center font-bold text-xs pointer-events-none">3</span>
+                            <span class="pointer-events-none">INSTALAÇÃO</span>
+                        </button>
+                        <button type="button" onclick="setTutorialStep(4)" id="tab-step-4" class="tut-tab font-orbitron text-xs md:text-sm font-bold p-3 rounded border border-cyber-border text-gray-400 hover:text-white flex items-center justify-center space-x-2 transition-all cursor-pointer">
+                            <span class="w-6 h-6 rounded-full bg-gray-800 text-gray-300 flex items-center justify-center font-bold text-xs pointer-events-none">4</span>
+                            <span class="pointer-events-none">JOGAR 4K</span>
+                        </button>
+                    </div>
+
+                    <div id="tutorialContent" class="grid grid-cols-1 md:grid-cols-12 gap-8 items-center min-h-[220px]">
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- SHOPPING CART DRAWER -->
+        <div id="cartDrawer" class="fixed inset-0 z-50 overflow-hidden hidden">
+            <div id="cartBackdrop" class="absolute inset-0 bg-black/80 backdrop-blur-sm transition-opacity"></div>
+
+            <div class="fixed inset-y-0 right-0 max-w-full flex pl-10">
+                <div class="w-screen max-w-md bg-cyber-black border-l border-cyber-border shadow-2xl flex flex-col">
+                    
+                    <div class="p-6 border-b border-cyber-border flex items-center justify-between bg-black/70">
+                        <div class="flex items-center space-x-2">
+                            <i class="fa-solid fa-cart-shopping text-xbox text-xl"></i>
+                            <h3 class="font-orbitron text-lg font-bold text-white">SEU CARRINHO</h3>
+                        </div>
+                        <button id="closeCartBtn" type="button" class="text-gray-400 hover:text-white p-2 cursor-pointer">
+                            <i class="fa-solid fa-xmark text-xl pointer-events-none"></i>
+                        </button>
+                    </div>
+
+                    <div id="cartItemsList" class="flex-1 overflow-y-auto p-6 space-y-4">
+                    </div>
+
+                    <div class="p-6 border-t border-cyber-border bg-black/90 space-y-4">
+                        <div class="flex justify-between font-orbitron text-sm text-gray-300">
+                            <span>Subtotal:</span>
+                            <span id="cartSubtotal" class="font-bold text-white">R$ 0,00</span>
+                        </div>
+                        <div class="flex justify-between font-orbitron text-lg text-white border-t border-gray-800 pt-3">
+                            <span>Total Final:</span>
+                            <span id="cartTotal" class="font-black text-xbox">R$ 0,00</span>
+                        </div>
+
+                        <button id="checkoutBtn" type="button" onclick="processCheckout()" class="w-full py-4 bg-xbox text-black font-orbitron font-bold text-sm tracking-wider uppercase rounded hover:bg-xbox-glow transition-all shadow-neon-xbox clip-btn cursor-pointer">
+                            <i class="fa-solid fa-bolt mr-2 pointer-events-none"></i> Finalizar Compra Agora
+                        </button>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
+        <!-- CHECKOUT MODAL (DYNAMIC PAYMENT OPTIONS) -->
+        <div id="checkoutModal" class="fixed inset-0 z-50 overflow-y-auto hidden">
+            <div class="min-h-screen px-4 text-center flex items-center justify-center">
+                <div id="checkoutOverlay" onclick="closeCheckoutModal()" class="fixed inset-0 bg-black/90 backdrop-blur-md transition-opacity"></div>
+
+                <div class="inline-block w-full max-w-lg p-6 my-8 text-left align-middle transition-all transform bg-cyber-card border-2 border-xbox rounded-2xl shadow-neon-xbox relative z-10 clip-corner">
+                    <button type="button" onclick="closeCheckoutModal()" class="absolute top-4 right-4 text-gray-400 hover:text-white p-2 cursor-pointer">
+                        <i class="fa-solid fa-xmark text-2xl pointer-events-none"></i>
+                    </button>
+
+                    <div class="text-center mb-6">
+                        <span class="bg-xbox/20 text-xbox border border-xbox/40 font-orbitron text-[10px] font-bold px-3 py-1 rounded uppercase tracking-wider">
+                            ⚡ FINALIZAR PAGAMENTO
+                        </span>
+                        <h3 class="font-orbitron text-2xl font-black text-white mt-2" id="checkoutTitle">ESCOLHA COMO PAGAR</h3>
+                        <p class="font-sans text-xs text-gray-300 mt-1" id="checkoutSubtitle">
+                            Item: <span id="checkoutProductName" class="text-white font-bold font-orbitron">DEV MODE</span> - 
+                            Total: <span id="checkoutProductPrice" class="text-xbox font-bold font-orbitron">R$ 0,00</span>
+                        </p>
+                    </div>
+
+                    <!-- Payment Method Tabs -->
+                    <div class="grid grid-cols-2 gap-2 mb-6 border-b border-cyber-border pb-3">
+                        <button id="payTabPix" type="button" onclick="switchPayMethod('pix')" class="font-orbitron text-xs font-bold py-2.5 px-3 rounded-lg border border-xbox text-xbox bg-xbox/10 flex items-center justify-center space-x-2 transition-all shadow-neon-xbox cursor-pointer">
+                            <i class="fa-brands fa-pix text-lg pointer-events-none"></i>
+                            <span class="pointer-events-none">PIX (IMEDIATO)</span>
+                        </button>
+                        <button id="payTabCard" type="button" onclick="switchPayMethod('card')" class="font-orbitron text-xs font-bold py-2.5 px-3 rounded-lg border border-cyber-border text-gray-400 hover:text-white flex items-center justify-center space-x-2 transition-all cursor-pointer">
+                            <i class="fa-solid fa-credit-card text-lg pointer-events-none"></i>
+                            <span class="pointer-events-none">CARTÃO DE CRÉDITO</span>
+                        </button>
+                    </div>
+
+                    <!-- PIX Payment Section -->
+                    <div id="payContentPix" class="space-y-4">
+                        <div class="bg-black/70 border border-cyber-border rounded-xl p-4 text-center">
+                            <p class="font-rajdhani text-xs text-gray-300 mb-2">Escaneie com o app do seu banco ou copie o código Pix abaixo:</p>
+                            
+                            <!-- Dynamic QR Code -->
+                            <div class="w-40 h-40 mx-auto bg-white p-2 rounded-lg border-2 border-xbox shadow-neon-xbox flex items-center justify-center mb-3">
+                                <img id="pixQrImg" src="" alt="QR Code Pix" class="w-full h-full object-contain">
+                            </div>
+
+                            <span class="font-rajdhani text-xs text-cyber-cyan block mb-2">Beneficiário: ADRIAN CRIS DE SOUSA MARI</span>
+
+                            <!-- Pix Key Input + Copy Button -->
+                            <div class="relative">
+                                <input type="text" readonly id="pixCodeInput" value="" class="w-full bg-cyber-black border border-cyber-border rounded-lg py-2.5 pl-3 pr-24 text-xs font-mono text-gray-300 focus:outline-none">
+                                <button type="button" onclick="copyPixCode()" id="copyPixBtn" class="absolute right-1 top-1 bottom-1 px-3 bg-xbox text-black font-orbitron font-bold text-[10px] rounded hover:bg-xbox-glow transition-all uppercase flex items-center space-x-1 cursor-pointer">
+                                    <i class="fa-solid fa-copy pointer-events-none"></i>
+                                    <span id="copyPixText" class="pointer-events-none">COPIAR</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="bg-xbox/10 border border-xbox/30 p-3 rounded-lg flex items-center space-x-3 text-xs font-rajdhani text-gray-200">
+                            <i class="fa-solid fa-bolt text-xbox text-xl"></i>
+                            <span>Após a realização do Pix, envie o comprovante no WhatsApp para ativação e envio imediato!</span>
+                        </div>
+                    </div>
+
+                    <!-- Card Payment Section -->
+                    <div id="payContentCard" class="space-y-4 hidden">
+                        <div class="bg-black/70 border border-cyber-border rounded-xl p-5 text-center space-y-4">
+                            <i class="fa-solid fa-shield-halved text-4xl text-cyber-cyan animate-pulse"></i>
+                            <div>
+                                <h4 class="font-orbitron font-bold text-base text-white">PAGAMENTO SEGURO VIA INFINITEPAY</h4>
+                                <p class="font-sans text-xs text-gray-300 mt-1">Você será redirecionado para a página oficial de pagamento criptografado.</p>
+                            </div>
+
+                            <button id="cardPayBtn" type="button" onclick="openCardPayment()" class="w-full py-4 bg-gradient-to-r from-cyber-cyan via-blue-500 to-cyber-purple text-white font-orbitron font-bold text-xs tracking-wider uppercase rounded-lg hover:shadow-neon-cyan active:scale-95 transition-all flex items-center justify-center space-x-2 clip-btn cursor-pointer touch-manipulation select-none">
+                                <i class="fa-solid fa-lock text-sm pointer-events-none"></i>
+                                <span id="cardPayBtnText" class="pointer-events-none">PAGAR NO CARTÃO DE CRÉDITO</span>
+                                <i class="fa-solid fa-arrow-right text-xs pointer-events-none"></i>
+                            </button>
+                        </div>
+
+                        <div class="bg-cyber-black border border-cyber-border p-3 rounded-lg text-center text-xs font-rajdhani text-gray-400">
+                            <i class="fa-solid fa-lock text-xbox mr-1"></i> Transação segura e protegida por criptografia de ponta a ponta.
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
+        <!-- PRODUCT DETAILS MODAL -->
+        <div id="productModal" class="fixed inset-0 z-50 overflow-y-auto hidden">
+            <div class="min-h-screen px-4 text-center flex items-center justify-center">
+                <div id="modalOverlay" class="fixed inset-0 bg-black/85 backdrop-blur-md transition-opacity"></div>
+
+                <div class="inline-block w-full max-w-2xl p-6 my-8 text-left align-middle transition-all transform bg-cyber-card border-2 border-xbox rounded-xl shadow-2xl relative z-10 clip-corner">
+                    <button id="closeModalBtn" type="button" class="absolute top-4 right-4 text-gray-400 hover:text-white p-2 cursor-pointer">
+                        <i class="fa-solid fa-xmark text-2xl pointer-events-none"></i>
+                    </button>
+
+                    <div id="modalContent">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- FOOTER SECTION -->
+        <footer id="guides" class="bg-black border-t border-cyber-border pt-12 pb-8 mt-auto">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
+                    
+                    <div class="space-y-4">
+                        <div class="flex items-center space-x-2">
+                            <i class="fa-brands fa-xbox text-xbox text-2xl"></i>
+                            <span class="font-orbitron font-black text-xl text-white">NEBULOSO</span>
+                        </div>
+                        <p class="font-sans text-xs text-gray-400 leading-relaxed">
+                            Sua loja especializada em emulação, pacotes de arcade e sistemas <strong>DEV MODE</strong> para Xbox Series X|S e Xbox One.
+                        </p>
+                    </div>
+
+                    <div>
+                        <h4 class="font-orbitron text-sm font-bold text-white mb-4 uppercase">Links Rápidos</h4>
+                        <ul class="space-y-2 font-rajdhani text-sm text-gray-400">
+                            <li><a href="#hero" class="hover:text-xbox">Início</a></li>
+                            <li><a href="#packages" class="hover:text-xbox">DEV MODE BÁSICO</a></li>
+                            <li><a href="#packages" class="hover:text-xbox">DEV MODE CRISTALINO</a></li>
+                            <li><a href="#devmode" class="hover:text-xbox">Como Instalar</a></li>
+                        </ul>
+                    </div>
+
+                    <div>
+                        <h4 class="font-orbitron text-sm font-bold text-white mb-4 uppercase">Status dos Servidores</h4>
+                        <div class="space-y-2 text-xs font-rajdhani">
+                            <div class="flex items-center justify-between text-gray-300 bg-cyber-black p-2 rounded border border-cyber-border">
+                                <span>Servidor FTP Xbox Dev:</span>
+                                <span class="text-xbox flex items-center"><i class="fa-solid fa-circle text-[8px] mr-1 animate-pulse"></i> ONLINE</span>
+                            </div>
+                            <div class="flex items-center justify-between text-gray-300 bg-cyber-black p-2 rounded border border-cyber-border">
+                                <span>Download de Bios & Shaders:</span>
+                                <span class="text-xbox flex items-center"><i class="fa-solid fa-circle text-[8px] mr-1 animate-pulse"></i> ONLINE</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <h4 class="font-orbitron text-sm font-bold text-white mb-4 uppercase">Pagamento Instantâneo</h4>
+                        <div class="flex space-x-3 text-2xl text-gray-400 mb-4">
+                            <i class="fa-brands fa-pix hover:text-xbox transition-colors"></i>
+                            <i class="fa-brands fa-cc-visa hover:text-cyber-cyan transition-colors"></i>
+                            <i class="fa-brands fa-cc-mastercard hover:text-cyber-pink transition-colors"></i>
+                            <i class="fa-brands fa-bitcoin hover:text-yellow-400 transition-colors"></i>
+                        </div>
+                        <span class="font-rajdhani text-xs text-gray-400 block">
+                            Envio imediato das credenciais e pacotes Dev Mode após confirmação.
+                        </span>
+                    </div>
+
+                </div>
+
+                <div class="border-t border-gray-900 pt-6 text-center">
+                    <p class="font-rajdhani text-xs text-gray-500">
+                        &copy; 2026 NEBULOSO DEV MODE XBOX & ARCADE. Todos os direitos reservados. Não associado diretamente à Microsoft Corporation.
+                    </p>
+                </div>
+            </div>
+        </footer>
+
+    </div>
+
+    <!-- BOTÃO FLUTUANTE DO WHATSAPP -->
+    <a href="https://wa.me/message/WZFSKQJAOWGTE1" target="_blank" rel="noopener noreferrer" 
+       title="Falar com Suporte"
+       onclick="window.open('https://wa.me/message/WZFSKQJAOWGTE1', '_blank'); return false;"
+       class="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-[100] flex items-center justify-center w-12 h-12 sm:w-14 sm:h-14 bg-gradient-to-r from-emerald-600 via-green-500 to-emerald-400 text-black rounded-full shadow-[0_0_20px_rgba(34,197,94,0.8)] hover:shadow-[0_0_30px_rgba(34,197,94,1)] hover:scale-110 active:scale-95 transition-all duration-300 border border-white/20 cursor-pointer touch-manipulation select-none pointer-events-auto">
+        <div class="relative flex items-center justify-center pointer-events-none">
+            <i class="fa-brands fa-whatsapp text-2xl sm:text-3xl text-black"></i>
+            <span class="absolute -top-1 -right-1 w-3 h-3 bg-white rounded-full animate-ping"></span>
+            <span class="absolute -top-1 -right-1 w-3 h-3 bg-white rounded-full"></span>
+        </div>
+    </a>
+
+    <!-- JAVASCRIPT LOGIC -->
+    <script>
+        const canvas = document.getElementById('snow-canvas');
+        const ctx = canvas ? canvas.getContext('2d') : null;
+
+        let particles = [];
+        const particleCount = 75;
+
+        function resizeCanvas() {
+            if (!canvas) return;
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        class Particle {
+            constructor() {
+                this.reset();
+            }
+
+            reset() {
+                if (!canvas) return;
+                this.x = Math.random() * canvas.width;
+                this.y = Math.random() * canvas.height - canvas.height;
+                this.size = Math.random() * 3 + 1;
+                this.speedY = Math.random() * 1.5 + 0.6;
+                this.speedX = Math.random() * 0.8 - 0.4;
+                this.opacity = Math.random() * 0.7 + 0.3;
+                const colors = ['#00FC60', '#107C41', '#00F0FF', '#00FF99'];
+                this.color = colors[Math.floor(Math.random() * colors.length)];
+            }
+
+            update() {
+                if (!canvas) return;
+                this.y += this.speedY;
+                this.x += this.speedX;
+
+                if (this.y > canvas.height) {
+                    this.reset();
+                }
+            }
+
+            draw() {
+                if (!ctx) return;
+                ctx.save();
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.fillStyle = this.color;
+                ctx.globalAlpha = this.opacity;
+                ctx.shadowBlur = 12;
+                ctx.shadowColor = this.color;
+                ctx.fill();
+                ctx.restore();
+            }
+        }
+
+        function initParticles() {
+            particles = [];
+            for (let i = 0; i < particleCount; i++) {
+                particles.push(new Particle());
+            }
+        }
+
+        function animateParticles() {
+            if (ctx && canvas) {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                particles.forEach(p => {
+                    p.update();
+                    p.draw();
+                });
+            }
+            requestAnimationFrame(animateParticles);
+        }
+
+        initParticles();
+        animateParticles();
+
+        // Product Catalog Database
+        const products = [
+            {
+                id: 1,
+                name: "DEV MODE CRISTALINO - PACOTE SUPREMO",
+                category: "devmode",
+                price: 49.90,
+                oldPrice: 199.90,
+                rating: 5.0,
+                badge: "RECOMENDADO 4K",
+                image: "https://i.postimg.cc/h47j60wZ/NEBULOSO.png",
+                description: "O mais completo pacote para Xbox Dev Mode. Acompanha BIOS universais atualizadas, PCSX2 PS2 4K, Dolphin GameCube/Wii, RetroArch e MAME com shaders CRT e filtros Cristalino.",
+                romCount: "+50.000 Jogos Suportados",
+                systems: "PS2, PS1, GameCube, Wii, SNES, Mega Drive, Arcade, N64",
+                cardLink: "https://link.infinitepay.io/nolaggameplay/VC1D-EmQkdM3qaI-49,90",
+                pixCode: "00020101021226710014BR.GOV.BCB.PIX0123nolaggameplay@gmail.com0222Pagamento nolaggamepla520400005303986540549.905802BR5925ADRIAN CRIS DE SOUSA MARI6008PACATUBA62290525QRCCGcKynOSkH8fkqMxwaUHwL63042C1C"
+            },
+            {
+                id: 2,
+                name: "DEV MODE BÁSICO - PACOTE ESSENCIAL",
+                category: "devmode",
+                price: 30.00,
+                oldPrice: 99.90,
+                rating: 4.8,
+                badge: "INICIAL / BÁSICO",
+                image: "https://i.postimg.cc/h47j60wZ/NEBULOSO.png",
+                description: "Pacote essencial para quem busca iniciar no Xbox Dev Mode. Inclui auxílio na Ativação Dev Mode, Sumário da Comunidade, Arquivos BIOS e Guia de Instalação.",
+                romCount: "Ativação + BIOS",
+                systems: "Ativação Dev Mode, Sumário da Comunidade, BIOS, Guia de Instalação",
+                cardLink: "https://link.infinitepay.io/nolaggameplay/VC1D-BH2estUjaR-30,00",
+                pixCode: "00020101021226710014BR.GOV.BCB.PIX0123nolaggameplay@gmail.com0222Pagamento nolaggamepla520400005303986540530.005802BR5925ADRIAN CRIS DE SOUSA MARI6008PACATUBA62290525QRCCn5uITtVY1LzDHMqnglcU363042304"
+            }
+        ];
+
+        // Shopping Cart State
+        let cart = [{ ...products[0], quantity: 1 }];
+
+        let currentCardPayUrl = "https://link.infinitepay.io/nolaggameplay/VC1D-EmQkdM3qaI-49,90";
+
+        function openCardPayment() {
+            if (currentCardPayUrl) {
+                window.open(currentCardPayUrl, '_blank');
+            }
+        }
+
+        function addToCart(productId) {
+            const product = products.find(p => p.id === productId);
+            if (!product) return;
+
+            const existing = cart.find(item => item.id === productId);
+            if (existing) {
+                existing.quantity += 1;
+            } else {
+                cart.push({ ...product, quantity: 1 });
+            }
+
+            updateCartUI();
+            openCartDrawer();
+        }
+
+        function removeFromCart(productId) {
+            cart = cart.filter(item => item.id !== productId);
+            updateCartUI();
+        }
+
+        function updateCartUI() {
+            const cartCountEl = document.getElementById('cartCount');
+            const cartListEl = document.getElementById('cartItemsList');
+            const subtotalEl = document.getElementById('cartSubtotal');
+            const totalEl = document.getElementById('cartTotal');
+
+            if (!cartCountEl || !cartListEl) return;
+
+            const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
+            cartCountEl.textContent = totalItems;
+
+            if (cart.length === 0) {
+                cartListEl.innerHTML = `
+                    <div class="text-center py-12 text-gray-500 font-orbitron">
+                        <i class="fa-solid fa-cart-arrow-down text-4xl mb-3 text-gray-600"></i>
+                        <p>Seu carrinho está vazio.</p>
+                    </div>
+                `;
+                if (subtotalEl) subtotalEl.textContent = 'R$ 0,00';
+                if (totalEl) totalEl.textContent = 'R$ 0,00';
+                return;
+            }
+
+            cartListEl.innerHTML = '';
+            let subtotal = 0;
+
+            cart.forEach(item => {
+                subtotal += item.price * item.quantity;
+                const itemEl = document.createElement('div');
+                itemEl.className = "flex items-center justify-between bg-black/70 p-3.5 rounded border border-cyber-border";
+                itemEl.innerHTML = `
+                    <div class="flex items-center space-x-3">
+                        <img src="${item.image}" alt="${item.name}" class="w-12 h-12 object-cover rounded border border-cyber-border">
+                        <div>
+                            <h4 class="font-orbitron text-xs font-bold text-white line-clamp-1">${item.name}</h4>
+                            <span class="font-orbitron text-xs text-xbox font-semibold">R$ ${item.price.toFixed(2)} (x${item.quantity})</span>
+                        </div>
+                    </div>
+                    <button type="button" onclick="removeFromCart(${item.id})" class="text-gray-500 hover:text-cyber-pink p-1 cursor-pointer">
+                        <i class="fa-solid fa-trash-can text-sm pointer-events-none"></i>
+                    </button>
+                `;
+                cartListEl.appendChild(itemEl);
+            });
+
+            if (subtotalEl) subtotalEl.textContent = `R$ ${subtotal.toFixed(2)}`;
+            if (totalEl) totalEl.textContent = `R$ ${subtotal.toFixed(2)}`;
+        }
+
+        const cartDrawer = document.getElementById('cartDrawer');
+        const cartBtn = document.getElementById('cartBtn');
+        const closeCartBtn = document.getElementById('closeCartBtn');
+        const cartBackdrop = document.getElementById('cartBackdrop');
+
+        function openCartDrawer() {
+            cartDrawer?.classList.remove('hidden');
+        }
+        function closeCartDrawer() {
+            cartDrawer?.classList.add('hidden');
+        }
+
+        cartBtn?.addEventListener('click', openCartDrawer);
+        closeCartBtn?.addEventListener('click', closeCartDrawer);
+        cartBackdrop?.addEventListener('click', closeCartDrawer);
+
+        function processCheckout() {
+            if (cart.length === 0) return;
+            closeCartDrawer();
+
+            const primaryItem = cart[0];
+            const totalPrice = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
+
+            // Update modal text elements
+            const productNameEl = document.getElementById('checkoutProductName');
+            const productPriceEl = document.getElementById('checkoutProductPrice');
+            const pixInputEl = document.getElementById('pixCodeInput');
+            const pixQrImgEl = document.getElementById('pixQrImg');
+            const cardPayBtnText = document.getElementById('cardPayBtnText');
+
+            if (productNameEl) productNameEl.textContent = primaryItem ? primaryItem.name : "PACOTE DEV MODE";
+            if (productPriceEl) productPriceEl.textContent = `R$ ${totalPrice.toFixed(2)}`;
+
+            // Selected link and pix payload setup
+            let activePixCode = primaryItem?.pixCode || "00020101021226710014BR.GOV.BCB.PIX0123nolaggameplay@gmail.com0222Pagamento nolaggamepla520400005303986540549.905802BR5925ADRIAN CRIS DE SOUSA MARI6008PACATUBA62290525QRCCGcKynOSkH8fkqMxwaUHwL63042C1C";
+            currentCardPayUrl = primaryItem?.cardLink || "https://link.infinitepay.io/nolaggameplay/VC1D-EmQkdM3qaI-49,90";
+
+            if (pixInputEl) pixInputEl.value = activePixCode;
+            if (pixQrImgEl) pixQrImgEl.src = `https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent(activePixCode)}`;
+            if (cardPayBtnText) cardPayBtnText.textContent = `PAGAR R$ ${totalPrice.toFixed(2)} NO CARTÃO DE CRÉDITO`;
+
+            document.getElementById('checkoutModal')?.classList.remove('hidden');
+        }
+
+        function closeCheckoutModal() {
+            document.getElementById('checkoutModal')?.classList.add('hidden');
+        }
+
+        function switchPayMethod(method) {
+            const tabPix = document.getElementById('payTabPix');
+            const tabCard = document.getElementById('payTabCard');
+            const contentPix = document.getElementById('payContentPix');
+            const contentCard = document.getElementById('payContentCard');
+
+            if (!tabPix || !tabCard || !contentPix || !contentCard) return;
+
+            if (method === 'pix') {
+                tabPix.className = "font-orbitron text-xs font-bold py-2.5 px-3 rounded-lg border border-xbox text-xbox bg-xbox/10 flex items-center justify-center space-x-2 transition-all shadow-neon-xbox cursor-pointer";
+                tabCard.className = "font-orbitron text-xs font-bold py-2.5 px-3 rounded-lg border border-cyber-border text-gray-400 hover:text-white flex items-center justify-center space-x-2 transition-all cursor-pointer";
+                contentPix.classList.remove('hidden');
+                contentCard.classList.add('hidden');
+            } else {
+                tabCard.className = "font-orbitron text-xs font-bold py-2.5 px-3 rounded-lg border border-cyber-cyan text-cyber-cyan bg-cyber-cyan/10 flex items-center justify-center space-x-2 transition-all shadow-neon-cyan cursor-pointer";
+                tabPix.className = "font-orbitron text-xs font-bold py-2.5 px-3 rounded-lg border border-cyber-border text-gray-400 hover:text-white flex items-center justify-center space-x-2 transition-all cursor-pointer";
+                contentCard.classList.remove('hidden');
+                contentPix.classList.add('hidden');
+            }
+        }
+
+        function copyPixCode() {
+            const pixInput = document.getElementById('pixCodeInput');
+            if (!pixInput) return;
+
+            pixInput.select();
+            pixInput.setSelectionRange(0, 99999);
+            
+            try {
+                document.execCommand('copy');
+            } catch (err) {
+                if (navigator.clipboard) {
+                    navigator.clipboard.writeText(pixInput.value);
+                }
+            }
+
+            const copyBtnText = document.getElementById('copyPixText');
+            const copyPixBtn = document.getElementById('copyPixBtn');
+
+            if (copyBtnText) copyBtnText.textContent = 'COPIADO!';
+            if (copyPixBtn) copyPixBtn.classList.replace('bg-xbox', 'bg-cyber-cyan');
+
+            setTimeout(() => {
+                if (copyBtnText) copyBtnText.textContent = 'COPIAR';
+                if (copyPixBtn) copyPixBtn.classList.replace('bg-cyber-cyan', 'bg-xbox');
+            }, 2500);
+        }
+
+        const productModal = document.getElementById('productModal');
+        const modalContent = document.getElementById('modalContent');
+        const closeModalBtn = document.getElementById('closeModalBtn');
+        const modalOverlay = document.getElementById('modalOverlay');
+
+        function openProductModal(productId) {
+            const p = products.find(item => item.id === productId);
+            if (!p || !modalContent) return;
+
+            modalContent.innerHTML = `
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="rounded-lg overflow-hidden border border-cyber-border">
+                        <img src="${p.image}" alt="${p.name}" class="w-full h-full object-cover">
+                    </div>
+                    <div class="space-y-4">
+                        <span class="bg-xbox/20 text-xbox border border-xbox/40 font-orbitron text-[10px] font-bold px-2.5 py-1 rounded">
+                            ${p.badge}
+                        </span>
+                        <h2 class="font-orbitron font-bold text-xl text-white">${p.name}</h2>
+                        <p class="font-sans text-xs text-gray-300 leading-relaxed">${p.description}</p>
+                        
+                        <div class="bg-black/60 p-3 rounded border border-cyber-border space-y-1 font-rajdhani text-xs">
+                            <p class="text-gray-300"><strong class="text-white">Capacidade:</strong> ${p.romCount}</p>
+                            <p class="text-gray-300"><strong class="text-white">Consoles emulados:</strong> ${p.systems}</p>
+                            <p class="text-gray-300"><strong class="text-white">Compatibilidade:</strong> Xbox Series X|S & Xbox One</p>
+                        </div>
+
+                        <div class="flex items-center justify-between pt-2">
+                            <div>
+                                <span class="text-gray-500 text-xs line-through block font-orbitron">R$ ${p.oldPrice.toFixed(2)}</span>
+                                <span class="font-orbitron font-extrabold text-2xl text-xbox">R$ ${p.price.toFixed(2)}</span>
+                            </div>
+                            <button type="button" onclick="addToCart(${p.id}); closeModal();" class="px-6 py-3 bg-xbox text-black font-orbitron font-bold text-xs uppercase rounded hover:bg-xbox-glow transition-all shadow-neon-xbox cursor-pointer">
+                                <i class="fa-solid fa-cart-plus mr-1"></i> Comprar Agora
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            productModal?.classList.remove('hidden');
+        }
+
+        function closeModal() {
+            productModal?.classList.add('hidden');
+        }
+
+        closeModalBtn?.addEventListener('click', closeModal);
+        modalOverlay?.addEventListener('click', closeModal);
+
+        const tutorialSteps = [
+            {
+                step: 1,
+                title: "1. CONTA MICROSOFT PARTNER CENTER",
+                description: "Registre seu perfil na conta de desenvolvedor da Microsoft para liberar a licença do Dev Mode de maneira 100% legal e segura.",
+                icon: "fa-user-shield",
+                highlights: ["Garantia do console mantida", "Sem risco de banimento na Live", "Licença vitalícia"]
+            },
+            {
+                step: 2,
+                title: "2. ATIVAÇÃO NO CONSOLE XBOX",
+                description: "Baixe o aplicativo 'Xbox Dev Mode' na Microsoft Store do seu Xbox Series X|S ou One. Insira o código no painel para parear.",
+                icon: "fa-tv",
+                highlights: ["Troca fácil entre Dev e Varejo", "Acesso total a GPU e DirectX 12", "Ativação em minutos"]
+            },
+            {
+                step: 3,
+                title: "3. INSTALAÇÃO DO DEV MODE",
+                description: "Acesse o painel web do seu Xbox via navegador do computador. Envie o pacote DEV MODE diretamente pelo IP do console.",
+                icon: "fa-download",
+                highlights: ["Instalação limpa via rede local", "BIOS e Shaders já integrados", "Sem modificações físicas"]
+            },
+            {
+                step: 4,
+                title: "4. CARREGUE SUAS ROMS E JOGUE EM 4K",
+                description: "Conecte seu pendrive ou HD em formato NTFS no Xbox ou envie via FTP. Execute seus jogos favoritos com máxima performance!",
+                icon: "fa-gamepad",
+                highlights: ["Visual cristalino com filtros CRT", "Suporte a múltiplos controles", "Save states na nuvem"]
+            }
+        ];
+
+        function setTutorialStep(stepNumber) {
+            document.querySelectorAll('.tut-tab').forEach((tab, index) => {
+                if (index + 1 === stepNumber) {
+                    tab.className = "tut-tab active font-orbitron text-xs md:text-sm font-bold p-3 rounded border border-xbox text-xbox bg-xbox/10 flex items-center justify-center space-x-2 transition-all shadow-neon-xbox cursor-pointer";
+                    const numSpan = tab.querySelector('span:first-child');
+                    if (numSpan) numSpan.className = "w-6 h-6 rounded-full bg-xbox text-black flex items-center justify-center font-bold text-xs pointer-events-none";
+                } else {
+                    tab.className = "tut-tab font-orbitron text-xs md:text-sm font-bold p-3 rounded border border-cyber-border text-gray-400 hover:text-white flex items-center justify-center space-x-2 transition-all cursor-pointer";
+                    const numSpan = tab.querySelector('span:first-child');
+                    if (numSpan) numSpan.className = "w-6 h-6 rounded-full bg-gray-800 text-gray-300 flex items-center justify-center font-bold text-xs pointer-events-none";
+                }
+            });
+
+            const data = tutorialSteps.find(s => s.step === stepNumber);
+            const container = document.getElementById('tutorialContent');
+
+            if (data && container) {
+                container.innerHTML = `
+                    <div class="md:col-span-8 space-y-4">
+                        <h3 class="font-orbitron text-xl font-bold text-white flex items-center">
+                            <i class="fa-solid ${data.icon} text-xbox mr-3 text-2xl"></i> ${data.title}
+                        </h3>
+                        <p class="font-sans text-sm text-gray-300 leading-relaxed">${data.description}</p>
+                        <ul class="space-y-2 pt-2">
+                            ${data.highlights.map(h => `
+                                <li class="flex items-center text-xs font-rajdhani text-gray-300">
+                                    <i class="fa-solid fa-check text-xbox mr-2"></i> ${h}
+                                </li>
+                            `).join('')}
+                        </ul>
+                    </div>
+                    <div class="md:col-span-4 bg-black/70 border border-xbox/40 p-6 rounded-xl text-center flex flex-col items-center justify-center space-y-3">
+                        <i class="fa-solid ${data.icon} text-5xl text-xbox animate-pulse"></i>
+                        <span class="font-orbitron text-xs font-bold text-gray-300 uppercase">Passo ${data.step} de 4</span>
+                        <span class="font-rajdhani text-xs text-cyber-cyan">Suporte Especializado NEBULOSO</span>
+                    </div>
+                `;
+            }
+        }
+
+        const mobileMenuBtn = document.getElementById('mobileMenuBtn');
+        const mobileMenu = document.getElementById('mobileMenu');
+
+        mobileMenuBtn?.addEventListener('click', () => {
+            mobileMenu?.classList.toggle('hidden');
+        });
+
+        window.onload = function() {
+            setTutorialStep(1);
+            updateCartUI();
+        };
+    </script>
+</body>
+</html>
